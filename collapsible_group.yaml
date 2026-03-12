@@ -33,6 +33,9 @@ collapsible_sub_button_groups:
           mainButtonCustomClass: <string> (only required if mainButtonType is set to custom)
     </pre></code-block>
   code: |-
+    .bubble-container:has(.collapsible) {
+      overflow: visible !important;
+    }
     .bubble-sub-button-group.collapsible {
       width: auto !important;
       margin-left: auto !important;
