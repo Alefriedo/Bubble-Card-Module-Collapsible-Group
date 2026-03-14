@@ -1,6 +1,6 @@
 collapsible_sub_button_groups:
   name: Collapsible Sub Button Groups
-  version: 1.0.1
+  version: 1.0.2
   creator: Alefriedo
   supported:
     - button
@@ -94,19 +94,21 @@ collapsible_sub_button_groups:
         }
 
         const mainButton = group.querySelector('.collapsible-main-btn');
+        if(!mainButton) return;
+
         if (!card._collapsibleOriginalActions) {
           card._collapsibleOriginalActions = {};
         }
-        if (mainButton && !card._collapsibleOriginalActions[groupIndex]) {
+
+        if (!card._collapsibleOriginalActions[groupIndex]) {
           card._collapsibleOriginalActions[groupIndex] = {
             tap: mainButton.getAttribute('data-tap-action'),
             double_tap: mainButton.getAttribute('data-double-tap-action'),
           };
         }
-        if (mainButton) {
-          mainButton.setAttribute('data-tap-action', '{"action":"none"}');
-          mainButton.setAttribute('data-double-tap-action', '{"action":"none"}');
-        }
+
+        mainButton.setAttribute('data-tap-action', '{"action":"none"}');
+        mainButton.setAttribute('data-double-tap-action', '{"action":"none"}');
 
         if (!group.querySelector('.collapsible-close-btn')) {
           group.classList.add('collapsible');
@@ -118,7 +120,7 @@ collapsible_sub_button_groups:
           group.insertBefore(closeButtonElement, group.firstChild);
         }
 
-        if (mainButton && !mainButton._collapsibleBound) {
+        if (!mainButton._collapsibleBound) {
           mainButton._collapsibleBound = true;
           
           mainButton.addEventListener('click', e => {
@@ -126,48 +128,51 @@ collapsible_sub_button_groups:
                 mainButton._timeoutClick = false;
                 return;
               }
+
               const group = mainButton.closest('.bubble-sub-button-group');
               if (group.classList.contains('expanded')) return;
+
+              if (mainButton._clickTimer) {
+                clearTimeout(mainButton._clickTimer);
+                mainButton._clickTimer = null;
+                return;
+              }
+              
+              mainButton._clickTimer = setTimeout(() => {
+                mainButton._clickTimer = null;
+                
+                const mainButtonIndex = [...mainButton.classList].find(c => /^bubble-sub-button-\d+$/.test(c))?.match(/\d+/)?.[0];
+                const mainButtonIsSlider = mainButtonIndex && !!card.querySelector(`.bubble-sub-button-slider-${mainButtonIndex}`);
+                const mainButtonHasDropdown = !!mainButton.querySelector('.bubble-dropdown-container');
+
+                if (mainButtonIsSlider || mainButtonHasDropdown) {
+                  mainButton._timeoutClick = true;
+                  mainButton.click();
+                } else {
+                  mainButton.dispatchEvent(new CustomEvent('hass-action', {
+                    detail: { config: { entity: mainButton.dataset.entity, tap_action: JSON.parse(card._collapsibleOriginalActions[groupIndex].tap) }, action: 'tap' },
+                    bubbles: true, composed: true
+                  }));
+                }
+              }, 250);
+              
               e.stopPropagation();
             }, true);
           
-          mainButton.addEventListener('pointerdown', (e) => {
+          mainButton.addEventListener('dblclick', (e) => {
             const group = mainButton.closest('.bubble-sub-button-group');
             if (group.classList.contains('expanded')) {
               mainButton.dispatchEvent(new CustomEvent('hass-action', {
-                detail: { config: { entity: mainButton.dataset.entity, tap_action: JSON.parse(card._collapsibleOriginalActions[groupIndex].tap) }, action: 'tap' },
+                detail: { config: { entity: mainButton.dataset.entity, double_tap_action: JSON.parse(card._collapsibleOriginalActions[groupIndex].double_tap) }, action: 'double_tap' },
                 bubbles: true, composed: true
               }));
               return;
             }
 
             e.stopPropagation();
-
-            if (mainButton._clickTimer) {
-              clearTimeout(mainButton._clickTimer);
-              mainButton._clickTimer = null;
-              group.classList.add('expanded');
-              return;
-            }
-
-            mainButton._clickTimer = setTimeout(() => {
-              mainButton._clickTimer = null;
-              
-              const mainButtonIndex = [...mainButton.classList].find(c => /^bubble-sub-button-\d+$/.test(c))?.match(/\d+/)?.[0];
-              const mainButtonIsSlider = mainButtonIndex && !!card.querySelector(`.bubble-sub-button-slider-${mainButtonIndex}`);
-              const mainButtonHasDropdown = !!mainButton.querySelector('.bubble-dropdown-container');
-
-              if (mainButtonIsSlider || mainButtonHasDropdown) {
-                mainButton._timeoutClick = true;
-                mainButton.click();
-              } else {
-                mainButton.dispatchEvent(new CustomEvent('hass-action', {
-                  detail: { config: { entity: mainButton.dataset.entity, tap_action: JSON.parse(card._collapsibleOriginalActions[groupIndex].tap) }, action: 'tap' },
-                  bubbles: true, composed: true
-                }));
-              }
-            }, 250);
-          });
+            
+            group.classList.add('expanded');
+          }, true);
 
           group.addEventListener('pointerdown', (e) => {
             const closeBtn = e.target.closest('.collapsible-close-btn');
