@@ -33,38 +33,57 @@ collapsible_sub_button_groups:
           mainButtonCustomClass: <string> (only required if mainButtonType is set to class name)
     </pre></code-block>
   code: |-
+
     .bubble-container:has(.collapsible) {
       overflow: visible !important;
     }
-    .bubble-sub-button-group.collapsible {
-      width: auto !important;
-      margin-left: auto !important;
+    
+    .bubble-sub-button-group:has(.floatingGroup) {
+      margin: auto !important;
+      min-width: 36px !important;
+      height: var(--bubble-sub-button-height, 36px);
+    }
+
+    .bubble-sub-button-group .floatingGroup {
+      position: absolute;
+      width: 36px !important;
       background-color: var(--bubble-sub-button-background-color, var(--bubble-icon-background-color, var(--bubble-secondary-background-color, var(--card-background-color, var(--ha-card-background)))));
       border-radius: var(--bubble-sub-slider-border-radius, var(--bubble-border-radius, calc(var(--row-height,56px)/2)));
     }
-
-    .bubble-sub-button-group.collapsible .bubble-sub-button {
-      overflow: hidden !important;
+    
+    .bubble-sub-button-group.expanded .floatingGroup {
+      width: auto !important;
     }
-
-    .bubble-sub-button-group.collapsible .bubble-sub-button:not(.collapsible-main-btn) {
+    
+    .bubble-sub-button-group .floatingGroup .buttonContainer {
+      display: flex;
+      position: relative;
+      gap: 8px;
+      align-items: center;
+    }
+    
+    .bubble-sub-button-group.collapsible .floatingGroup .buttonContainer .bubble-sub-button:not(.collapsible-main-btn) {
       position: absolute;
       opacity: 0 !important;
       flex-shrink: 1 !important;
       transition: none !important;
       pointer-events: none !important;
     }
-
-    .bubble-sub-button-group.collapsible.expanded .bubble-sub-button:not(.collapsible-main-btn) {
+    
+    .bubble-sub-button-group.collapsible.expanded .floatingGroup .buttonContainer .bubble-sub-button:not(.collapsible-main-btn) {
       position: relative;
       opacity: 1 !important;
       flex-shrink: 0 !important;
       pointer-events: auto !important;
     }
-
-    .bubble-sub-button-group.collapsible .collapsible-close-btn {
+    
+    .bubble-sub-button-group.collapsible .floatingGroup .buttonContainer .collapsible-close-btn {
       cursor: pointer !important;
       pointer-events: auto !important;
+    }
+    
+    .sliderContainer {
+      overflow: hidden !important;
     }
 
 
@@ -113,11 +132,20 @@ collapsible_sub_button_groups:
         if (!group.querySelector('.collapsible-close-btn')) {
           group.classList.add('collapsible');
           group.classList.replace('display-column', 'display-inline');
+          
+          const floatingGroup = document.createElement('div');
+          floatingGroup.classList.add('floatingGroup');
+          group.appendChild(floatingGroup);
+          const buttonContainer = document.createElement('div');
+          buttonContainer.classList.add('buttonContainer');
+          buttons.forEach(b => buttonContainer.appendChild(b));
 
           const closeButtonElement = document.createElement('div');
           closeButtonElement.className = 'bubble-sub-button collapsible-close-btn';
           closeButtonElement.innerHTML = '<ha-icon class="bubble-sub-button-icon show-icon icon-without-state" icon="mdi:chevron-right"></ha-icon>';
-          group.insertBefore(closeButtonElement, group.firstChild);
+          buttonContainer.insertBefore(closeButtonElement, buttonContainer.firstChild);
+
+          floatingGroup.appendChild(buttonContainer);
         }
 
         if (!mainButton._collapsibleBound) {
