@@ -30,7 +30,7 @@ collapsible_sub_button_groups:
       groupsConfig:
         - groupIndex: <int> (required)
           mainButtonType: <first | last | custom> (defaults to first)
-          mainButtonCustomClass: <string> (only required if mainButtonType is set to custom)
+          mainButtonCustomClass: <string> (only required if mainButtonType is set to class name)
     </pre></code-block>
   code: |-
     .bubble-container:has(.collapsible) {
@@ -80,7 +80,7 @@ collapsible_sub_button_groups:
         if (!group) return;
 
         const mainButtonType = groupConfig.mainButtonType ?? 'first';
-        const mainButtonCustomClass = groupConfig.mainButtonCustomClass ?? '';
+        const mainButtonCustomClass = (groupConfig.mainButtonCustomClass ?? '').replace(/^\./, '');
         const buttons = group.querySelectorAll('.bubble-sub-button:not(.collapsible-close-btn)');
       
         if (mainButtonType == 'first') {
@@ -135,8 +135,11 @@ collapsible_sub_button_groups:
               if (mainButton._clickTimer) {
                 clearTimeout(mainButton._clickTimer);
                 mainButton._clickTimer = null;
+                e.stopPropagation();
                 return;
               }
+              
+              e.stopPropagation();
               
               mainButton._clickTimer = setTimeout(() => {
                 mainButton._clickTimer = null;
@@ -154,12 +157,17 @@ collapsible_sub_button_groups:
                     bubbles: true, composed: true
                   }));
                 }
-              }, 250);
-              
-              e.stopPropagation();
+              }, 250);              
             }, true);
           
           mainButton.addEventListener('dblclick', (e) => {
+            e.stopPropagation();
+            
+            if(mainButton._clickTimer) {
+              clearTimeout(mainButton._clickTimer);
+              mainButton._clickTimer = null;
+            }
+
             const group = mainButton.closest('.bubble-sub-button-group');
             if (group.classList.contains('expanded')) {
               mainButton.dispatchEvent(new CustomEvent('hass-action', {
@@ -168,15 +176,13 @@ collapsible_sub_button_groups:
               }));
               return;
             }
-
-            e.stopPropagation();
             
             group.classList.add('expanded');
           }, true);
 
-          group.addEventListener('pointerdown', (e) => {
-            const closeBtn = e.target.closest('.collapsible-close-btn');
-            if (!closeBtn) return;
+          group.addEventListener('click', (e) => {
+            const closeButton = e.target.closest('.collapsible-close-btn');
+            if (!closeButton) return;
             e.preventDefault();
             group.classList.remove('expanded');
           });
@@ -204,14 +210,14 @@ collapsible_sub_button_groups:
               selector:
                 select:
                   options:
-                    - label: First
+                    - label: First Button
                       value: first
-                    - label: Last
+                    - label: Last Button
                       value: last
-                    - label: Custom Class
+                    - label: Identified by class name
                       value: custom
             mainButtonCustomClass:
-              label: Custom class of main button
+              label: Class name of main button
               selector:
                 text: null
           label_field: groupIndex
