@@ -1,6 +1,6 @@
 collapsible_sub_button_groups:
   name: Collapsible Sub Button Groups
-  version: 1.0.2
+  version: 1.1.0
   creator: Alefriedo
   supported:
     - button
@@ -31,53 +31,81 @@ collapsible_sub_button_groups:
         - groupIndex: <int> (required)
           mainButtonType: <first | last | custom> (defaults to first)
           mainButtonCustomClass: <string> (only required if mainButtonType is set to class name)
+      styling:
+        backgroundColor: < color | hexcode | rgba >
     </pre></code-block>
   code: |-
-   .bubble-container:has(.collapsible) {
+    .bubble-button-card:has(.collapsible) {
+      overflow: visible !important;
+    }
+    
+    .bubble-container:has(.collapsible) {
       overflow: visible !important;
     }
 
     .bubble-container:has(.collapsible) .bubble-sub-button-group {
       display: flex !important;
+      min-height: auto !important;
     }
 
-    .bubble-sub-button-group .floatingGroup {
-      position: relative;
-      background-color: var(--bubble-sub-button-background-color, var(--bubble-icon-background-color, var(--bubble-secondary-background-color, var(--card-background-color, var(--ha-card-background)))));
-      border-radius: var(--bubble-sub-slider-border-radius, var(--bubble-border-radius, calc(var(--row-height,56px)/2)));
+    .bubble-sub-button-group.collapsible.expanded {
+      min-height: var(--bubble-sub-button-height, 36px) !important;
     }
+  
 
-    .bubble-sub-button-group.expanded .floatingGroup {
-      position: absolute !important;
-    }
-    
-    .bubble-sub-button-group .floatingGroup .buttonContainer {
-      display: flex !important;
+    .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group {
       position: relative !important;
-      align-items: center;
+      
+      display: flex !important;
+      flex-wrap: nowrap !important;
+      flex-direction: row !important;
+      justify-content: flex-end !important;
+      align-items: space-around !important;
+
+      min-height: var(--bubble-sub-button-height, 36px) !important;
+  
+      background-color: none !important;
+      border-radius: 9999px !important;
+    }
+
+    .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible.expanded .collapsible-floating-group{
+      position: absolute !important;
+      background-color: var(--collapsible-background-color, #1c1c1c) !important;  width: max-content !important;
+      
     }
     
-    .bubble-sub-button-group.collapsible .floatingGroup .buttonContainer .bubble-sub-button:not(.collapsible-main-btn) {
-      position: absolute;
+    .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group .collapsible-button-container {
+      position: relative !important;
+      display: flex !important;
+      flex-direction: row !important;
+      gap: 8px !important;
+    }
+    
+    .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group .collapsible-button-container .bubble-sub-button:not(.collapsible-main-btn) {
+      position: absolute !important;
       opacity: 0 !important;
       flex-shrink: 1 !important;
       transition: none !important;
       pointer-events: none !important;
     }
+
+    .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible.expanded .collapsible-floating-group .collapsible-button-container .bubble-sub-button {
+      padding: 0 !important;
+    }
     
-    .bubble-sub-button-group.collapsible.expanded .floatingGroup .buttonContainer .bubble-sub-button:not(.collapsible-main-btn) {
-      position: relative;
+    .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible.expanded .collapsible-floating-group .collapsible-button-container .bubble-sub-button:not(.collapsible-main-btn) {
+      position: relative !important;
       opacity: 1 !important;
       flex-shrink: 0 !important;
       pointer-events: auto !important;
     }
     
-    .bubble-sub-button-group.collapsible .floatingGroup .buttonContainer .collapsible-close-btn {
+    .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group .collapsible-button-container .collapsible-close-btn {
       cursor: pointer !important;
       pointer-events: auto !important;
     }
     
-    .sliderContainer {
+    .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group.sliderContainer {
       overflow: hidden !important;
     }
 
@@ -92,6 +120,14 @@ collapsible_sub_button_groups:
         const groups = card.querySelectorAll('.bubble-sub-button-group');
         const group = groups[groupIndex];
         if (!group) return;
+
+        // set custom background color globally
+        const menuBackground = this.config.collapsible_sub_button_groups?.styling?.backgroundColor ?? null;
+        if (menuBackground) {
+          group.style.setProperty('--collapsible-background-color', menuBackground);
+        } else {
+          group.style.removeProperty('--collapsible-background-color');
+        }
 
         const mainButtonType = groupConfig.mainButtonType ?? 'first';
         const mainButtonCustomClass = (groupConfig.mainButtonCustomClass ?? '').replace(/^\./, '');
@@ -114,6 +150,7 @@ collapsible_sub_button_groups:
           card._collapsibleOriginalActions = {};
         }
 
+        // store default actions of main button
         if (!card._collapsibleOriginalActions[groupIndex]) {
           card._collapsibleOriginalActions[groupIndex] = {
             tap: mainButton.getAttribute('data-tap-action'),
@@ -121,50 +158,30 @@ collapsible_sub_button_groups:
           };
         }
 
+        // unset default actions of main button
         mainButton.setAttribute('data-tap-action', '{"action":"none"}');
         mainButton.setAttribute('data-double-tap-action', '{"action":"none"}');
 
+        // setup collapsible menu
         if (!group.querySelector('.collapsible-close-btn')) {
           group.classList.add('collapsible');
           group.classList.replace('display-column', 'display-inline');
-          
+
+          // add floating group preventing interference with other buttons/groups
           const floatingGroup = document.createElement('div');
-          floatingGroup.classList.add('floatingGroup');
+          floatingGroup.classList.add('collapsible-floating-group');
           group.appendChild(floatingGroup);
           const buttonContainer = document.createElement('div');
-          buttonContainer.classList.add('buttonContainer');
+          buttonContainer.classList.add('collapsible-button-container');
           buttons.forEach(b => buttonContainer.appendChild(b));
 
+          // insert close button
           const closeButtonElement = document.createElement('div');
           closeButtonElement.className = 'bubble-sub-button collapsible-close-btn';
           closeButtonElement.innerHTML = '<ha-icon class="bubble-sub-button-icon show-icon icon-without-state" icon="mdi:chevron-right"></ha-icon>';
           buttonContainer.insertBefore(closeButtonElement, buttonContainer.firstChild);
 
           floatingGroup.appendChild(buttonContainer);
-
-          const sliderContainer = document.createElement('div');
-          sliderContainer.classList.add('sliderWrapper');
-          
-          let subButtonIds = [];
-          buttons.forEach(b => {
-            let buttonId = [...b.classList].find(c => /^bubble-sub-button-\d+$/.test(c))?.match(/\d+/)?.[0];
-            if(buttonId) subButtonIds.push(buttonId);
-          });
-          subButtonIds.forEach(i => {
-            const subButtonSlider = card.querySelector(`.bubble-sub-button-slider-${i}`);
-            if (subButtonSlider) {
-              let subButtonSliderWrapper = subButtonSlider.closest('.bubble-sub-slider-wrapper');
-              sliderContainer.appendChild(subButtonSliderWrapper);
-            }
-          });
-
-          floatingGroup.appendChild(sliderContainer);
-
-          setTimeout(() => {
-            const mainButtonRect = mainButton.getBoundingClientRect();
-            buttonContainer.style.maxWidth = `${mainButtonRect.width}px`;
-            group.style.minHeight = `${mainButtonRect.height}px`;
-          }, 25);
         }
 
         if (!mainButton._collapsibleBound) {
@@ -231,7 +248,6 @@ collapsible_sub_button_groups:
             }
             
             group.classList.add('expanded');
-            mainButton.closest('.buttonContainer').style.maxWidth = 'none';
           }, true);
 
           // setup event listener of close button
@@ -240,7 +256,6 @@ collapsible_sub_button_groups:
             if (!closeButton) return;
             e.preventDefault();
             group.classList.remove('expanded');
-            closeButton.closest('.buttonContainer').style.maxWidth = `${mainButtonRect.width}px`;
           });
         }
       });
@@ -249,33 +264,43 @@ collapsible_sub_button_groups:
     })()}
   editor:
     - name: groupsConfig
-      label: Collapsible Groups
-      selector:
-        object:
-          fields:
-            groupIndex:
-              label: Group index
-              selector:
-                number:
-                  min: 0
-                  max: 100
-                  step: 1
-                  mode: box
-            mainButtonType:
-              label: Main Button
-              selector:
-                select:
-                  options:
-                    - label: First Button
-                      value: first
-                    - label: Last Button
-                      value: last
-                    - label: Identified by class name
-                      value: custom
-            mainButtonCustomClass:
-              label: Class name of main button
-              selector:
-                text: null
-          label_field: groupIndex
-          description_field: mainButtonType
-          multiple: true
+    label: Collapsible Groups
+    selector:
+      object:
+        fields:
+          groupIndex:
+            label: Group index
+            selector:
+              number:
+                min: 0
+                max: 100
+                step: 1
+                mode: box
+          mainButtonType:
+            label: Main Button
+            selector:
+              select:
+                options:
+                  - label: First Button
+                    value: first
+                  - label: Last Button
+                    value: last
+                  - label: Identified by class name
+                    value: custom
+          mainButtonCustomClass:
+            label: Class name of main button
+            selector:
+              text: null
+        label_field: groupIndex
+        description_field: mainButtonType
+        multiple: true
+  - type: expandable
+    name: styling
+    title: Styling
+    icon: mdi:palette
+    expanded: false
+    schema:
+      - name: backgroundColor
+        label: color, hex or rgba
+        selector:
+          text: {}
