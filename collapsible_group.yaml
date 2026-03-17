@@ -33,16 +33,12 @@ collapsible_sub_button_groups:
           mainButtonCustomClass: <string> (only required if mainButtonType is set to class name)
     </pre></code-block>
   code: |-
-    .bubble-container:has(.collapsible) {
+   .bubble-container:has(.collapsible) {
       overflow: visible !important;
     }
 
     .bubble-container:has(.collapsible) .bubble-sub-button-group {
       display: flex !important;
-    }
-    
-    .bubble-sub-button-group:has(.floatingGroup) {
-      height: var(--bubble-sub-button-height, 36px);
     }
 
     .bubble-sub-button-group .floatingGroup {
@@ -52,18 +48,12 @@ collapsible_sub_button_groups:
     }
 
     .bubble-sub-button-group.expanded .floatingGroup {
-      position: absolute;
-    }
-    
-    .bubble-sub-button-group.expanded .floatingGroup {
-      width: auto !important;
-      margin: auto !important;
+      position: absolute !important;
     }
     
     .bubble-sub-button-group .floatingGroup .buttonContainer {
-      display: flex;
-      position: relative;
-      gap: 8px;
+      display: flex !important;
+      position: relative !important;
       align-items: center;
     }
     
@@ -154,7 +144,6 @@ collapsible_sub_button_groups:
 
           const sliderContainer = document.createElement('div');
           sliderContainer.classList.add('sliderWrapper');
-          floatingGroup.appendChild(sliderContainer);
           
           let subButtonIds = [];
           buttons.forEach(b => {
@@ -168,20 +157,31 @@ collapsible_sub_button_groups:
               sliderContainer.appendChild(subButtonSliderWrapper);
             }
           });
+
+          floatingGroup.appendChild(sliderContainer);
+
+          setTimeout(() => {
+            const mainButtonRect = mainButton.getBoundingClientRect();
+            buttonContainer.style.maxWidth = `${mainButtonRect.width}px`;
+            group.style.minHeight = `${mainButtonRect.height}px`;
+          }, 25);
         }
 
         if (!mainButton._collapsibleBound) {
           mainButton._collapsibleBound = true;
           
           mainButton.addEventListener('click', e => {
+              // passthrough for synthetic click opening the slider or dropdown menu of a main sub button
               if (mainButton._timeoutClick) {
                 mainButton._timeoutClick = false;
                 return;
               }
 
+              // if the sub button group is expanded, use default tap action
               const group = mainButton.closest('.bubble-sub-button-group');
               if (group.classList.contains('expanded')) return;
 
+              // timeout waiting for double click to prevent the tap action firing when its actually a double click
               if (mainButton._clickTimer) {
                 clearTimeout(mainButton._clickTimer);
                 mainButton._clickTimer = null;
@@ -198,6 +198,7 @@ collapsible_sub_button_groups:
                 const mainButtonIsSlider = mainButtonIndex && !!card.querySelector(`.bubble-sub-button-slider-${mainButtonIndex}`);
                 const mainButtonHasDropdown = !!mainButton.querySelector('.bubble-dropdown-container');
 
+                // fire synthetic click if main sub button has a slider or a dropdown menu to open them else use default tap action
                 if (mainButtonIsSlider || mainButtonHasDropdown) {
                   mainButton._timeoutClick = true;
                   mainButton.click();
@@ -213,11 +214,13 @@ collapsible_sub_button_groups:
           mainButton.addEventListener('dblclick', (e) => {
             e.stopPropagation();
             
+            // reset click timer if running
             if(mainButton._clickTimer) {
               clearTimeout(mainButton._clickTimer);
               mainButton._clickTimer = null;
             }
 
+            // fire initial double tap event if group is expanded
             const group = mainButton.closest('.bubble-sub-button-group');
             if (group.classList.contains('expanded')) {
               mainButton.dispatchEvent(new CustomEvent('hass-action', {
@@ -228,13 +231,16 @@ collapsible_sub_button_groups:
             }
             
             group.classList.add('expanded');
+            mainButton.closest('.buttonContainer').style.maxWidth = 'none';
           }, true);
 
+          // setup event listener of close button
           group.addEventListener('click', (e) => {
             const closeButton = e.target.closest('.collapsible-close-btn');
             if (!closeButton) return;
             e.preventDefault();
             group.classList.remove('expanded');
+            closeButton.closest('.buttonContainer').style.maxWidth = `${mainButtonRect.width}px`;
           });
         }
       });
