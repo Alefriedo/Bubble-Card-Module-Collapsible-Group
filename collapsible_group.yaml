@@ -33,26 +33,31 @@ collapsible_sub_button_groups:
           mainButtonCustomClass: <string> (only required if mainButtonType is set to class name)
     </pre></code-block>
   code: |-
-
     .bubble-container:has(.collapsible) {
       overflow: visible !important;
     }
+
+    .bubble-container:has(.collapsible) .bubble-sub-button-group {
+      display: flex !important;
+    }
     
     .bubble-sub-button-group:has(.floatingGroup) {
-      margin: auto !important;
-      min-width: 36px !important;
       height: var(--bubble-sub-button-height, 36px);
     }
 
     .bubble-sub-button-group .floatingGroup {
-      position: absolute;
-      width: 36px !important;
+      position: relative;
       background-color: var(--bubble-sub-button-background-color, var(--bubble-icon-background-color, var(--bubble-secondary-background-color, var(--card-background-color, var(--ha-card-background)))));
       border-radius: var(--bubble-sub-slider-border-radius, var(--bubble-border-radius, calc(var(--row-height,56px)/2)));
+    }
+
+    .bubble-sub-button-group.expanded .floatingGroup {
+      position: absolute;
     }
     
     .bubble-sub-button-group.expanded .floatingGroup {
       width: auto !important;
+      margin: auto !important;
     }
     
     .bubble-sub-button-group .floatingGroup .buttonContainer {
@@ -146,6 +151,23 @@ collapsible_sub_button_groups:
           buttonContainer.insertBefore(closeButtonElement, buttonContainer.firstChild);
 
           floatingGroup.appendChild(buttonContainer);
+
+          const sliderContainer = document.createElement('div');
+          sliderContainer.classList.add('sliderWrapper');
+          floatingGroup.appendChild(sliderContainer);
+          
+          let subButtonIds = [];
+          buttons.forEach(b => {
+            let buttonId = [...b.classList].find(c => /^bubble-sub-button-\d+$/.test(c))?.match(/\d+/)?.[0];
+            if(buttonId) subButtonIds.push(buttonId);
+          });
+          subButtonIds.forEach(i => {
+            const subButtonSlider = card.querySelector(`.bubble-sub-button-slider-${i}`);
+            if (subButtonSlider) {
+              let subButtonSliderWrapper = subButtonSlider.closest('.bubble-sub-slider-wrapper');
+              sliderContainer.appendChild(subButtonSliderWrapper);
+            }
+          });
         }
 
         if (!mainButton._collapsibleBound) {
