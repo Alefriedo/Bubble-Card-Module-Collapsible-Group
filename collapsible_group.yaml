@@ -1,6 +1,6 @@
 collapsible_sub_button_groups:
   name: Collapsible Sub Button Groups
-  version: 1.1.0
+  version: 1.2.0
   creator: Alefriedo
   supported:
     - button
@@ -12,6 +12,7 @@ collapsible_sub_button_groups:
     - sub-buttons
   description: |-
     <h2>Collapsible Sub Button Menu</h2>
+    <h3>Breaking Change in 1.2.0: Default action type is set to tap, action type is now choosable.</h3>
     <p>
       Turns a sub-button group into a collapsible menu. All buttons except the main button are hidden by default and reveald with a double tap. The menu can be closed by the automatically inserted close button. 
     </p> <br>
@@ -28,11 +29,12 @@ collapsible_sub_button_groups:
     <code-block><pre>
     collapsible_sub_button_groups:
       groupsConfig:
-        - groupIndex: <int> (required)
-          mainButtonType: <first | last | custom> (defaults to first)
-          mainButtonCustomClass: <string> (only required if mainButtonType is set to class name)
+        - groupIndex: %lt; int &gt; (required)
+          actionType: %lt; tap | double_tap | hold &gt; (defaults to tap)
+          mainButtonType: %lt; first | last | custom &gt; (defaults to first)
+          mainButtonCustomClass: %lt; string &gt; (only required if mainButtonType is set to class name)
       styling:
-        backgroundColor: < color | hexcode | rgba >
+        backgroundColor: &gt; color | hexcode | rgba &gt;
     </pre></code-block>
   code: |-
     .bubble-button-card:has(.collapsible) {
@@ -129,6 +131,7 @@ collapsible_sub_button_groups:
           group.style.removeProperty('--collapsible-background-color');
         }
 
+        const actionType = groupConfig.actionType ?? 'tap';
         const mainButtonType = groupConfig.mainButtonType ?? 'first';
         const mainButtonCustomClass = (groupConfig.mainButtonCustomClass ?? '').replace(/^\./, '');
         const buttons = group.querySelectorAll('.bubble-sub-button:not(.collapsible-close-btn)');
@@ -155,12 +158,14 @@ collapsible_sub_button_groups:
           card._collapsibleOriginalActions[groupIndex] = {
             tap: mainButton.getAttribute('data-tap-action'),
             double_tap: mainButton.getAttribute('data-double-tap-action'),
+            hold: mainButton.getAttribute('data-hold-action')
           };
         }
 
         // unset default actions of main button
         mainButton.setAttribute('data-tap-action', '{"action":"none"}');
         mainButton.setAttribute('data-double-tap-action', '{"action":"none"}');
+        mainButton.setAttribute('data-hold-action', '{"action":"none"}');
 
         // setup collapsible menu
         if (!group.querySelector('.collapsible-close-btn')) {
@@ -187,7 +192,36 @@ collapsible_sub_button_groups:
         if (!mainButton._collapsibleBound) {
           mainButton._collapsibleBound = true;
           
+          mainButton.addEventListener('pointerdown', e => {
+            e.stopPropagation();
+
+            mainButton._holdTimer = setTimeout(() => {
+              console.log(actionType);
+              if(actionType == 'hold' && !group.classList.contains('expanded')) {
+                group.classList.add('expanded');
+              } else {
+                mainButton.dispatchEvent(new CustomEvent('hass-action', {
+                  detail: { config: { entity: mainButton.dataset.entity, hold_action: JSON.parse(card._collapsibleOriginalActions[groupIndex].hold) }, action: 'hold' },
+                  bubbles: true, composed: true
+                }));
+              }
+
+              mainButton._holdTimer = null;
+              mainButton._buttonHeld = true;
+            }, 250);
+          }, true);
+
           mainButton.addEventListener('click', e => {
+              // reset hold timer, if button not held long enough
+              if(mainButton._holdTimer && !mainButton._buttonHeld) {
+                clearTimeout(mainButton._holdTimer);
+                mainButton._holdTimer = null;
+              } else { // else cancel click action, if button was held
+                e.stopPropagation();
+                mainButton._buttonHeld = null;
+                return;
+              }
+
               // passthrough for synthetic click opening the slider or dropdown menu of a main sub button
               if (mainButton._timeoutClick) {
                 mainButton._timeoutClick = false;
@@ -216,7 +250,9 @@ collapsible_sub_button_groups:
                 const mainButtonHasDropdown = !!mainButton.querySelector('.bubble-dropdown-container');
 
                 // fire synthetic click if main sub button has a slider or a dropdown menu to open them else use default tap action
-                if (mainButtonIsSlider || mainButtonHasDropdown) {
+                if (actionType == 'tap' && !group.classList.contains('expanded')) {
+                  group.classList.add('expanded');
+                } else if (mainButtonIsSlider || mainButtonHasDropdown) {
                   mainButton._timeoutClick = true;
                   mainButton.click();
                 } else {
@@ -239,15 +275,15 @@ collapsible_sub_button_groups:
 
             // fire initial double tap event if group is expanded
             const group = mainButton.closest('.bubble-sub-button-group');
-            if (group.classList.contains('expanded')) {
+            if (actionType == 'double_tap' && !group.classList.contains('expanded')) {
+              group.classList.add('expanded');
+            } else {
               mainButton.dispatchEvent(new CustomEvent('hass-action', {
                 detail: { config: { entity: mainButton.dataset.entity, double_tap_action: JSON.parse(card._collapsibleOriginalActions[groupIndex].double_tap) }, action: 'double_tap' },
                 bubbles: true, composed: true
               }));
               return;
             }
-            
-            group.classList.add('expanded');
           }, true);
 
           // setup event listener of close button
@@ -264,43 +300,54 @@ collapsible_sub_button_groups:
     })()}
   editor:
     - name: groupsConfig
-    label: Collapsible Groups
-    selector:
-      object:
-        fields:
-          groupIndex:
-            label: Group index
-            selector:
-              number:
-                min: 0
-                max: 100
-                step: 1
-                mode: box
-          mainButtonType:
-            label: Main Button
-            selector:
-              select:
-                options:
-                  - label: First Button
-                    value: first
-                  - label: Last Button
-                    value: last
-                  - label: Identified by class name
-                    value: custom
-          mainButtonCustomClass:
-            label: Class name of main button
-            selector:
-              text: null
-        label_field: groupIndex
-        description_field: mainButtonType
-        multiple: true
-  - type: expandable
-    name: styling
-    title: Styling
-    icon: mdi:palette
-    expanded: false
-    schema:
-      - name: backgroundColor
-        label: color, hex or rgba
-        selector:
-          text: {}
+      label: Collapsible Groups
+      selector:
+        object:
+          fields:
+            groupIndex:
+              label: Group index
+              selector:
+                number:
+                  min: 0
+                  max: 100
+                  step: 1
+                  mode: box
+            actionType:
+              label: Action Type
+              selector:
+                select:
+                  options:
+                    - label: Tap
+                      value: tap
+                    - label:  Double Tap
+                      value: double_tap
+                    - label: Hold
+                      value: hold
+            mainButtonType:
+              label: Main Button
+              selector:
+                select:
+                  options:
+                    - label: First Button
+                      value: first
+                    - label: Last Button
+                      value: last
+                    - label: Identified by class name
+                      value: custom
+            mainButtonCustomClass:
+              label: Class name of main button
+              selector:
+                text: null
+          label_field: groupIndex
+          description_field: mainButtonType
+          multiple: true
+    - type: expandable
+      name: styling
+      title: Styling
+      icon: mdi:palette
+      expanded: false
+      schema:
+        - name: backgroundColor
+          label: color, hex or rgba
+          selector:
+            text: {}
