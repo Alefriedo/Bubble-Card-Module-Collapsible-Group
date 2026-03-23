@@ -1,6 +1,6 @@
 collapsible_sub_button_groups:
   name: Collapsible Sub Button Groups
-  version: 1.2.0
+  version: 1.2.1
   creator: Alefriedo
   supported:
     - button
@@ -29,14 +29,23 @@ collapsible_sub_button_groups:
     <code-block><pre>
     collapsible_sub_button_groups:
       groupsConfig:
-        - groupIndex: %lt; int &gt; (required)
-          actionType: %lt; tap | double_tap | hold &gt; (defaults to tap)
-          mainButtonType: %lt; first | last | custom &gt; (defaults to first)
-          mainButtonCustomClass: %lt; string &gt; (only required if mainButtonType is set to class name)
+        - groupIndex: &lt; int &gt; (required)
+          actionType: &lt; tap | double_tap | hold &gt; (defaults to tap)
+          mainButtonType: &lt; first | last | custom &gt; (defaults to first)
+          mainButtonCustomClass: &lt; string &gt; (only required if mainButtonType is set to class name)
       styling:
-        backgroundColor: &gt; color | hexcode | rgba &gt;
+        backgroundColor: &lt; color | hexcode | rgba &gt;
+        allowOverflow: &lt; true | false &gt; (defaults to false)
     </pre></code-block>
   code: |-
+    .bubble-button-card:has(.collapsible).collapsible-allow-overflow {
+      overflow: visible !important;
+    }
+
+    .bubble-container:has(.collapsible).collapsible-allow-overflow {
+      overflow: visible !important;
+    }
+        
     .bubble-container:has(.collapsible) .bubble-sub-button-group {
       display: flex !important;
       min-height: auto !important;
@@ -45,7 +54,7 @@ collapsible_sub_button_groups:
     .bubble-sub-button-group.collapsible.expanded {
       min-height: var(--bubble-sub-button-height, 36px) !important;
     }
-  
+
 
     .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group {
       position: relative !important;
@@ -57,7 +66,7 @@ collapsible_sub_button_groups:
       align-items: space-around !important;
 
       min-height: var(--bubble-sub-button-height, 36px) !important;
-  
+
       background-color: none !important;
       border-radius: 9999px !important;
     }
@@ -67,14 +76,14 @@ collapsible_sub_button_groups:
       background-color: var(--collapsible-background-color, #1c1c1c) !important;  width: max-content !important;
       
     }
-    
+
     .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group .collapsible-button-container {
       position: relative !important;
       display: flex !important;
       flex-direction: row !important;
       gap: 8px !important;
     }
-    
+
     .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group .collapsible-button-container .bubble-sub-button:not(.collapsible-main-btn) {
       position: absolute !important;
       opacity: 0 !important;
@@ -86,19 +95,19 @@ collapsible_sub_button_groups:
     .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible.expanded .collapsible-floating-group .collapsible-button-container .bubble-sub-button {
       padding: 0 !important;
     }
-    
+
     .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible.expanded .collapsible-floating-group .collapsible-button-container .bubble-sub-button:not(.collapsible-main-btn) {
       position: relative !important;
       opacity: 1 !important;
       flex-shrink: 0 !important;
       pointer-events: auto !important;
     }
-    
+
     .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group .collapsible-button-container .collapsible-close-btn {
       cursor: pointer !important;
       pointer-events: auto !important;
     }
-    
+
     .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group.sliderContainer {
       overflow: hidden !important;
     }
@@ -116,11 +125,18 @@ collapsible_sub_button_groups:
         if (!group) return;
 
         // set custom background color globally
-        const menuBackground = this.config.collapsible_sub_button_groups?.styling?.backgroundColor ?? null;
+        const menuBackground = this.config.collapsible_sub_button_groups?.styling?.backgroundColor || null;
         if (menuBackground) {
           group.style.setProperty('--collapsible-background-color', menuBackground);
         } else {
           group.style.removeProperty('--collapsible-background-color');
+        }
+
+        // set allowence of overflow of the menu
+        const allowOverflow = this.config.collapsible_sub_button_groups?.styling?.allowOverflow || null;
+        if (allowOverflow) {
+          card.querySelector('.bubble-container').classList.add('collapsible-allow-overflow');
+          card.querySelector('.bubble-button-card').classList.add('collapsible-allow-overflow');
         }
 
         const actionType = groupConfig.actionType ?? 'tap';
@@ -215,7 +231,7 @@ collapsible_sub_button_groups:
               }
 
               // if the sub button group is expanded, use default tap action
-              if (group.classList.contains('expanded')) return;
+              // if (group.classList.contains('expanded')) return;
 
               // timeout waiting for double click to prevent the tap action firing when its actually a double click
               if (mainButton._clickTimer) {
@@ -233,7 +249,6 @@ collapsible_sub_button_groups:
                 const mainButtonIndex = [...mainButton.classList].find(c => /^bubble-sub-button-\d+$/.test(c))?.match(/\d+/)?.[0];
                 const mainButtonIsSlider = mainButtonIndex && !!card.querySelector(`.bubble-sub-button-slider-${mainButtonIndex}`);
                 const mainButtonHasDropdown = !!mainButton.querySelector('.bubble-dropdown-container');
-
                 // fire synthetic click if main sub button has a slider or a dropdown menu to open them else use default tap action
                 if (actionType == 'tap' && !group.classList.contains('expanded')) {
                   group.classList.add('expanded');
@@ -304,7 +319,7 @@ collapsible_sub_button_groups:
                   options:
                     - label: Tap
                       value: tap
-                    - label:  Double Tap
+                    - label: Double Tap
                       value: double_tap
                     - label: Hold
                       value: hold
@@ -336,3 +351,7 @@ collapsible_sub_button_groups:
           label: color name, hex code or rgba
           selector:
             text: {}
+        - name: allowOverflow
+          label: Allow overflow of sub button menu outside of card
+          selector:
+            boolean: {}
