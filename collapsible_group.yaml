@@ -37,14 +37,6 @@ collapsible_sub_button_groups:
         backgroundColor: &gt; color | hexcode | rgba &gt;
     </pre></code-block>
   code: |-
-    .bubble-button-card:has(.collapsible) {
-      overflow: visible !important;
-    }
-    
-    .bubble-container:has(.collapsible) {
-      overflow: visible !important;
-    }
-
     .bubble-container:has(.collapsible) .bubble-sub-button-group {
       display: flex !important;
       min-height: auto !important;
