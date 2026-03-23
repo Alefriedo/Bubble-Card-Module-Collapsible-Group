@@ -333,6 +333,6 @@ collapsible_sub_button_groups:
       expanded: false
       schema:
         - name: backgroundColor
-          label: color, hex or rgba
+          label: color name, hex code or rgba
           selector:
             text: {}
