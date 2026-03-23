@@ -185,10 +185,8 @@ collapsible_sub_button_groups:
           mainButton._collapsibleBound = true;
           
           mainButton.addEventListener('pointerdown', e => {
-            e.stopPropagation();
-
-            mainButton._holdTimer = setTimeout(() => {
-              console.log(actionType);
+            const group = e.target.closest('.bubble-sub-button-group');
+            group._holdTimer = setTimeout(() => {
               if(actionType == 'hold' && !group.classList.contains('expanded')) {
                 group.classList.add('expanded');
               } else {
@@ -198,20 +196,16 @@ collapsible_sub_button_groups:
                 }));
               }
 
-              mainButton._holdTimer = null;
-              mainButton._buttonHeld = true;
-            }, 250);
+              group._holdTimer = null;
+            }, 500);
           }, true);
 
           mainButton.addEventListener('click', e => {
+              const group = e.target.closest('.bubble-sub-button-group');
               // reset hold timer, if button not held long enough
-              if(mainButton._holdTimer && !mainButton._buttonHeld) {
-                clearTimeout(mainButton._holdTimer);
-                mainButton._holdTimer = null;
-              } else { // else cancel click action, if button was held
-                e.stopPropagation();
-                mainButton._buttonHeld = null;
-                return;
+              if(group._holdTimer) {
+                clearTimeout(group._holdTimer);
+                group._holdTimer = null;
               }
 
               // passthrough for synthetic click opening the slider or dropdown menu of a main sub button
@@ -221,7 +215,6 @@ collapsible_sub_button_groups:
               }
 
               // if the sub button group is expanded, use default tap action
-              const group = mainButton.closest('.bubble-sub-button-group');
               if (group.classList.contains('expanded')) return;
 
               // timeout waiting for double click to prevent the tap action firing when its actually a double click
@@ -244,7 +237,7 @@ collapsible_sub_button_groups:
                 // fire synthetic click if main sub button has a slider or a dropdown menu to open them else use default tap action
                 if (actionType == 'tap' && !group.classList.contains('expanded')) {
                   group.classList.add('expanded');
-                } else if (mainButtonIsSlider || mainButtonHasDropdown) {
+                } else if(mainButtonIsSlider || mainButtonHasDropdown) {
                   mainButton._timeoutClick = true;
                   mainButton.click();
                 } else {
