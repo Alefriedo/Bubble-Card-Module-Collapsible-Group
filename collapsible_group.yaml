@@ -1,6 +1,6 @@
 collapsible_sub_button_groups:
   name: Collapsible Sub Button Groups
-  version: 1.2.1
+  version: 1.2.2
   creator: Alefriedo
   supported:
     - button
@@ -69,6 +69,8 @@ collapsible_sub_button_groups:
 
       background-color: none !important;
       border-radius: 9999px !important;
+
+      z-index: 98 !important;
     }
 
     .bubble-container:has(.collapsible) .bubble-sub-button-group.collapsible.expanded .collapsible-floating-group{
