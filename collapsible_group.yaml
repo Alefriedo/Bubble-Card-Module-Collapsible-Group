@@ -1,6 +1,6 @@
 collapsible_sub_button_groups:
   name: Collapsible Sub Button Groups
-  version: 1.2.2
+  version: 1.2.3
   creator: Alefriedo
   supported:
     - button
@@ -203,6 +203,9 @@ collapsible_sub_button_groups:
           mainButton._collapsibleBound = true;
           
           mainButton.addEventListener('pointerdown', e => {
+            // prevent capturing of clicks in bubble cards button dropdown menu
+            if (e.target.closest('ha-select, ha-dropdown-item, input, select')) return;
+
             const group = e.target.closest('.bubble-sub-button-group');
             group._holdTimer = setTimeout(() => {
               if(actionType == 'hold' && !group.classList.contains('expanded')) {
@@ -219,6 +222,9 @@ collapsible_sub_button_groups:
           }, true);
 
           mainButton.addEventListener('click', e => {
+              // prevent capturing of clicks in bubble cards button dropdown menu
+              if (e.target.closest('ha-select, ha-dropdown-item, input, select')) return;
+
               const group = e.target.closest('.bubble-sub-button-group');
               // reset hold timer, if button not held long enough
               if(group._holdTimer) {
@@ -267,6 +273,9 @@ collapsible_sub_button_groups:
             }, true);
           
           mainButton.addEventListener('dblclick', (e) => {
+            // prevent capturing of clicks in bubble cards button dropdown menu
+            if (e.target.closest('ha-select, ha-dropdown-item, input, select')) return;
+
             e.stopPropagation();
             
             // reset click timer if running
