@@ -115,6 +115,20 @@ collapsible_sub_button_groups:
       overflow: hidden !important;
     }
 
+    .bubble-sub-button-bottom-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-floating-group {
+      min-width: 100% !important;
+      width: max-content !important;
+    }
+
+    .bubble-sub-button-bottom-container:has(.collapsible) .bubble-sub-button-group.collapsible.expanded .collapsible-floating-group {
+      min-width: 100% !important;
+      width: max-content !important;
+    }
+
+    .bubble-sub-button-bottom-container:has(.collapsible) .bubble-sub-button-group.collapsible .collapsible-button-container {
+      width: 100% !important;
+    }
+
 
     ${(() => {
       const groupsConfig = this.config.collapsible_sub_button_groups?.groupsConfig ?? [];
