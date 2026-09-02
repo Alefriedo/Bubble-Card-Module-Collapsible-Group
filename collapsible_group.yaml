@@ -245,6 +245,7 @@ collapsible_sub_button_groups:
               // reset hold timer, if button not held long enough
               if(group._holdTimer) {
                 clearTimeout(group._holdTimer);
+                group.wasHold = null;
                 group._holdTimer = null;
               }
 
@@ -257,7 +258,6 @@ collapsible_sub_button_groups:
               // prevent click if action was hold
               if (group._wasHold) {
                 e.stopPropagation();
-                e.preventDefault();
 
                 group._wasHold = null;
                 return;
