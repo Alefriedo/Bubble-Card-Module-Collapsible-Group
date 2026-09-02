@@ -232,6 +232,7 @@ collapsible_sub_button_groups:
                 }));
               }
 
+              group._wasHold = true;
               group._holdTimer = null;
             }, 500);
           }, true);
@@ -250,6 +251,15 @@ collapsible_sub_button_groups:
               // passthrough for synthetic click opening the slider or dropdown menu of a main sub button
               if (mainButton._timeoutClick) {
                 mainButton._timeoutClick = false;
+                return;
+              }
+
+              // prevent click if action was hold
+              if (group._wasHold) {
+                e.stopPropagation();
+                e.preventDefault();
+
+                group._wasHold = null;
                 return;
               }
 
